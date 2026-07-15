@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>LACTA — Guide Technicien</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#071a2e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LACTA">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root{
+    --bg: #071a2e;
+    --panel: #0d2744;
+    --panel-2: #123253;
+    --border: #1e4468;
+    --text: #eaf2fb;
+    --text-dim: #8fa8c4;
+    --amber: #4fb0ff;
+    --amber-dim: #123a5e;
+    --ste: #e08a3c;
+    --prd: #34c98f;
+    --nep: #4fb0ff;
+    --nin: #b98af0;
+    --danger: #e0555a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; height:100%;}
+  body{
+    background-image:
+      radial-gradient(circle at 10% -5%, rgba(79,176,255,0.14), transparent 42%),
+      radial-gradient(circle at 100% 100%, rgba(52,201,143,0.10), transparent 45%);
+  }
+
+  .app{ max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+
+  /* Header */
+  .header{ padding:18px 18px 14px; border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(14,17,19,0.92); backdrop-filter:blur(6px); z-index:20;}
+  .header-row{ display:flex; justify-content:space-between; align-items:flex-start; }
+  .brand-block{ display:flex; align-items:center; gap:10px; }
+  .logo-mark{ flex-shrink:0; background:#fff; border-radius:9px; padding:3px 5px; box-shadow: 0 0 10px rgba(79,176,255,0.25); }
+  .logo-mark img{ display:block; height:30px; width:auto; border-radius:3px; }
+  .brand{ font-size:11px; letter-spacing:2px; color:var(--text-dim); text-transform:uppercase; }
+  .title{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:22px; letter-spacing:1px; margin-top:2px;}
+  .title span{ color:var(--amber); }
+  .clock-block{ text-align:right; }
+  .clock-time{ font-family:'JetBrains Mono',monospace; font-weight:700; font-size:20px; color:var(--amber); letter-spacing:1px; }
+  .clock-date{ font-size:10.5px; color:var(--text-dim); text-transform:capitalize; margin-top:2px; }
+  .header-sub{ font-size:12px; color:var(--text-dim); margin-top:6px; }
+
+  /* Search / keypad zone */
+  .entry{ padding:20px 18px 8px; }
+  .display{
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px 18px;
+    display:flex; align-items:center; gap:12px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+  .display input{
+    flex:1; background:transparent; border:none; outline:none; color:var(--amber);
+    font-family:'JetBrains Mono',monospace; font-size:34px; font-weight:700; letter-spacing:3px;
+    caret-color: var(--amber);
+  }
+  .display input::placeholder{ color:#3a4046; }
+  .display .hint{ font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace;}
+  .clear-btn{ background:var(--panel-2); border:1px solid var(--border); color:var(--text-dim); width:34px; height:34px; border-radius:9px; font-size:16px; cursor:pointer; }
+
+  .keypad{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+  .key{
+    background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    font-family:'JetBrains Mono',monospace; font-size:19px; font-weight:600;
+    padding:14px 0; border-radius:10px; cursor:pointer; user-select:none;
+    transition: transform 0.06s ease, background 0.15s ease;
+  }
+  .key:active{ transform:scale(0.94); background:var(--amber-dim); }
+  .key.wide{ font-size:13px; color:var(--text-dim); }
+
+  /* Result */
+  .result-zone{ padding:14px 18px 30px; flex:1; }
+  .empty-state{ text-align:center; padding:40px 20px; color:var(--text-dim); font-size:13px; line-height:1.6; }
+  .empty-state .big-icon{ font-size:30px; margin-bottom:10px; opacity:0.5; }
+
+  .result-card{ display:none; animation: rise 0.25s ease; }
+  .result-card.show{ display:block; }
+  @keyframes rise{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .phase-strip{ height:4px; border-radius:4px 4px 0 0; }
+  .card-body{
+    background:var(--panel); border:1px solid var(--border); border-top:none;
+    border-radius:0 0 14px 14px; padding:18px;
+  }
+  .card-top{ display:flex; align-items:baseline; gap:12px; margin-bottom:4px; }
+  .etape-num{ font-family:'JetBrains Mono',monospace; font-weight:800; font-size:38px; line-height:1; }
+  .phase-name{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:1px; }
+  .phase-note{ font-size:11px; color:var(--text-dim); margin-bottom:12px; }
+  .desc{ font-size:16px; line-height:1.45; margin:10px 0 14px; }
+  .code-chip{ display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; padding:4px 9px; border-radius:6px; color:#fff; letter-spacing:0.5px;}
+
+  .maint-btn{
+    width:100%; margin-top:16px; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); padding:13px; border-radius:10px; font-size:14px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;
+  }
+  .maint-btn:active{ background:var(--amber-dim); }
+  .maint-btn .ic{ font-size:16px; }
+
+  .maint-panel{ display:none; margin-top:10px; border:1px dashed var(--border); border-radius:10px; padding:14px; background:rgba(245,163,0,0.04); }
+  .maint-panel.show{ display:block; animation: rise 0.2s ease; }
+  .maint-title{ font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--amber); font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+  .verified-badge{ background:rgba(52,201,143,0.15); color:var(--prd); border:1px solid var(--prd); padding:2px 7px; border-radius:5px; font-size:9.5px; text-transform:none; letter-spacing:0; }
+  .maint-source{ font-size:10.5px; color:var(--text-dim); margin:-4px 0 10px; font-style:italic; }
+  .maint-item{ display:flex; gap:10px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.05); font-size:14px; }
+  .maint-item:last-child{ border-bottom:none; }
+  .maint-item .tag{ font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; padding:2px 6px; border-radius:5px; background:var(--panel-2); color:var(--text-dim); height:fit-content; white-space:nowrap; }
+  .maint-empty{ font-size:13px; color:var(--text-dim); line-height:1.5; }
+
+  /* Browse list toggle */
+  .browse-toggle{ text-align:center; margin-top:22px; }
+  .browse-toggle button{ background:none; border:none; color:var(--text-dim); font-size:12px; text-decoration:underline; cursor:pointer; }
+  .browse{ display:none; margin-top:14px; }
+  .browse.show{ display:block; }
+  .phase-group{ margin-bottom:16px; }
+  .phase-group h3{ font-size:11px; text-transform:uppercase; letter-spacing:1px; margin:0 0 8px; padding-left:4px; }
+  .mini-row{ display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:8px; font-size:12.5px; cursor:pointer; }
+  .mini-row:active{ background:var(--panel-2); }
+  .mini-row .mn{ font-family:'JetBrains Mono',monospace; font-weight:700; width:32px; flex-shrink:0; }
+  .mini-row .mt{ color:var(--text-dim); flex:1; }
+
+  .footer{ text-align:center; padding:14px; font-size:10.5px; color:#4a5157; border-top:1px solid var(--border); }
+  .footer-credit{ margin-top:4px; font-size:9.5px; color:#3a4551; letter-spacing:0.3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="header-row">
+      <div class="brand-block">
+        <div class="logo-mark">
+          <img src="data:image/jpeg;base64,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" alt="JIBAL" />
+        </div>
+        <div>
+          <div class="brand">JIBAL · Groupe Polmlek</div>
+          <div class="title">LES <span>LACTA</span></div>
+        </div>
+      </div>
+      <div class="clock-block">
+        <div class="clock-time" id="clockTime">--:--</div>
+        <div class="clock-date" id="clockDate">-- --- ----</div>
+      </div>
+    </div>
+    <div class="header-sub">Tapez le numéro d'étape affiché sur l'automate</div>
+  </div>
+
+  <div class="entry">
+    <div class="display">
+      <input id="stepInput" type="text" inputmode="numeric" placeholder="___" maxlength="3" autocomplete="off">
+      <div class="hint">ÉTAPE</div>
+      <button class="clear-btn" onclick="clearInput()">✕</button>
+    </div>
+    <div class="keypad" id="keypad"></div>
+  </div>
+
+  <div class="result-zone">
+    <div class="empty-state" id="emptyState">
+      <div class="big-icon">⌗</div>
+      Entrez un numéro d'étape (ex : 133) pour afficher la phase, la description et les points de maintenance.
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="phase-strip" id="phaseStrip"></div>
+      <div class="card-body">
+        <div class="card-top">
+          <div class="etape-num" id="rEtape"></div>
+          <div class="phase-name" id="rPhaseName"></div>
+        </div>
+        <div class="phase-note" id="rPhaseNote"></div>
+        <div class="desc" id="rDesc"></div>
+        <span class="code-chip" id="rCode"></span>
+
+        <button class="maint-btn" onclick="toggleMaint()">
+          <span class="ic">🔧</span> Voir les points de maintenance
+        </button>
+        <div class="maint-panel" id="maintPanel">
+          <div class="maint-title">À vérifier si arrêt sur cette étape <span class="verified-badge" id="verifiedBadge" style="display:none;"></span></div>
+          <div class="maint-source" id="maintSource"></div>
+          <div id="maintList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="browse-toggle">
+      <button onclick="toggleBrowse()" id="browseBtn">Parcourir toutes les étapes par phase</button>
+    </div>
+    <div class="browse" id="browse"></div>
+  </div>
+
+  <div class="footer">
+    JIBAL · Guide interne — Les LACTA · usage atelier
+    <div class="footer-credit">Développé par Elabidi · v1.0</div>
+  </div>
+</div>
+
+<script>
+const PHASES = {
+  STE: { name: "Stérilisation", color: "#e08a3c", note: "Départ étape 0, après un NEP complet" },
+  PRD: { name: "Production", color: "#34c98f", note: "Départ étape 45, 155 ou 130" },
+  NEP: { name: "NEP complet", color: "#4fb0ff", note: "Départ étape 0" },
+  NIN: { name: "Nettoyage intermédiaire", color: "#b98af0", note: "Départ étape 45 ou 155" },
+};
+
+const CODE_COLORS = {
+  REP:"#7f8c8d", ATT:"#95a5a6", REM:"#3498db", VID:"#8e44ad", CHF:"#e74c3c",
+  REF:"#00bcd4", STE:"#d35400", CIR:"#16a085", POU:"#2980b9", DOS:"#c0392b",
+  RIN:"#2ecc71", DEM:"#27ae60", CONF:"#f39c12", FLIP:"#e67e22", EAU:"#1abc9c", STAB:"#9b59b6"
+};
+
+// data: etape, code, phase, description
+const DATA = {
+  0:{c:"REP",p:"STE",d:"Repos"},
+  2:{c:"ATT",p:"STE",d:"Attente vitesse OK du séparateur et de la bactofuge"},
+  3:{c:"ATT",p:"STE",d:"Attente préparation de la stérilisation"},
+  4:{c:"REM",p:"STE",d:"Remplissage bac de lancement"},
+  5:{c:"VID",p:"STE",d:"Vidange bac de lancement vers égout"},
+  10:{c:"REM",p:"STE",d:"Remplissage de la lacta et vidange vers égout"},
+  15:{c:"CHF",p:"STE",d:"Chauffage"},
+  20:{c:"STE",p:"STE",d:"Stérilisation"},
+  25:{c:"FLIP",p:"STE",d:"Abattement de quelques vannes en stérilisation (Flip)"},
+  35:{c:"REF",p:"STE",d:"Refroidissement (vidange vers égout)"},
+  40:{c:"STAB",p:"STE",d:"Stabilisation TS44 (temp. pasteurisation) et TS64 (temp. sortie : ouverture eau glacée)"},
+  45:{c:"ATT",p:"STE",d:"Circulation d'eau : attente décision de l'opérateur"},
+
+  49:{c:"ATT",p:"PRD",d:"Attente vitesse OK séparateur/bactofuge (avant vidange)"},
+  55:{c:"REF",p:"PRD",d:"Refroidissement final"},
+  103:{c:"REM",p:"PRD",d:"Remplissage de la ligne d'envoi par l'eau"},
+  104:{c:"REM",p:"PRD",d:"Préparation du niveau dans le bac de lancement"},
+  105:{c:"POU",p:"PRD",d:"Pousse à lait de la ligne d'envoi"},
+  106:{c:"REM",p:"PRD",d:"Remplissage de la zone de mélange dans le bac de lancement"},
+  110:{c:"VID",p:"PRD",d:"Vidange bac de lancement (niveau bas)"},
+  115:{c:"POU",p:"PRD",d:"Pousse à lait du bac vers séparateur"},
+  117:{c:"POU",p:"PRD",d:"Pousse à lait du séparateur vers vanne 104"},
+  122:{c:"POU",p:"PRD",d:"Pousse de V104 vers destination"},
+  123:{c:"POU",p:"PRD",d:"Remplissage vers réservoir de récupération basse pression"},
+  124:{c:"CONF",p:"PRD",d:"Attente confirmation de la supervision de fin de pousse"},
+  125:{c:"DEM",p:"PRD",d:"Production et démarrage compteurs lait et crème"},
+  130:{c:"CIR",p:"PRD",d:"Circulation lait suite à un défaut ou décision opérateur"},
+  131:{c:"ATT",p:"PRD",d:"Attente vitesse OK séparateur/bactofuge (circulation)"},
+  132:{c:"VID",p:"PRD",d:"Vidange de la ligne du bac (sur défaut ou décision)"},
+  133:{c:"POU",p:"PRD",d:"Pousse à l'eau de la ligne d'envoi"},
+  134:{c:"VID",p:"PRD",d:"Vidange du bac de lancement vers le bac"},
+  135:{c:"REM",p:"PRD",d:"Remplissage zone de mélange HP dans le bac de lancement"},
+  136:{c:"VID",p:"PRD",d:"Vidange bac de lancement (niveau bas)"},
+  140:{c:"POU",p:"PRD",d:"Pousse à l'eau du séparateur vers vanne 104"},
+  142:{c:"POU",p:"PRD",d:"Pousse à l'eau du séparateur vers chambreur"},
+  143:{c:"POU",p:"PRD",d:"Pousse à l'eau du chambreur vers vanne V104"},
+  147:{c:"POU",p:"PRD",d:"Pousse à l'eau de V104 vers destination"},
+  148:{c:"VID",p:"PRD",d:"Vidange vers réservoir de récupération haute pression"},
+  149:{c:"CONF",p:"PRD",d:"Attente confirmation de la supervision de fin de pousse"},
+  150:{c:"RIN",p:"PRD",d:"Rinçage vers égout et rinçage indépendant de la bactofugeuse"},
+  155:{c:"ATT",p:"PRD",d:"Circulation d'eau : attente décision de l'opérateur"},
+  160:{c:"VID",p:"PRD",d:"Vidange finale du bac de lancement vers égout"},
+  163:{c:"REF",p:"PRD",d:"Refroidissement final (fin de cycle)"},
+
+  202:{c:"ATT",p:"NEP",d:"Attente vitesse OK du séparateur et de la bactofuge"},
+  203:{c:"ATT",p:"NEP",d:"Attente préparation du nettoyage"},
+  204:{c:"REM",p:"NEP",d:"Remplissage bac de lancement"},
+  205:{c:"VID",p:"NEP",d:"Vidange bac de lancement vers égout"},
+  207:{c:"RIN",p:"NEP",d:"Rinçage vers égout"},
+  210:{c:"CIR",p:"NEP",d:"Rinçage en circulation"},
+  240:{c:"DOS",p:"NEP",d:"Dosage soude"},
+  245:{c:"CHF",p:"NEP",d:"Chauffage"},
+  250:{c:"CIR",p:"NEP",d:"Circulation soude"},
+  252:{c:"FLIP",p:"NEP",d:"Circulation soude — bascule de vannes (Flip)"},
+  253:{c:"EAU",p:"NEP",d:"Appoint eau du bac de lancement"},
+  255:{c:"VID",p:"NEP",d:"Vidange bac de lancement (niveau bas)"},
+  257:{c:"VID",p:"NEP",d:"Évacuation solution nettoyage (soude) vers égout : vidange"},
+  258:{c:"RIN",p:"NEP",d:"Rinçage vers égout"},
+  259:{c:"CIR",p:"NEP",d:"Rinçage en circulation"},
+  265:{c:"DOS",p:"NEP",d:"Dosage acide"},
+  270:{c:"CHF",p:"NEP",d:"Chauffage"},
+  275:{c:"CIR",p:"NEP",d:"Circulation acide"},
+  277:{c:"FLIP",p:"NEP",d:"Circulation acide — bascule de vannes (Flip)"},
+  278:{c:"EAU",p:"NEP",d:"Appoint eau du bac de lancement"},
+  280:{c:"VID",p:"NEP",d:"Vidange bac de lancement vers égout"},
+  282:{c:"VID",p:"NEP",d:"Évacuation solution nettoyage (acide) vers égout : vidange"},
+  295:{c:"FLIP",p:"NEP",d:"Rinçage et abattement de quelques vannes (Flip)"},
+  296:{c:"RIN",p:"NEP",d:"Rinçage vers égout"},
+  298:{c:"CIR",p:"NEP",d:"Rinçage en circulation"},
+
+  304:{c:"REM",p:"NIN",d:"Remplissage de la ligne de soude jusqu'au bac de lancement"},
+  308:{c:"CIR",p:"NIN",d:"Circulation pour appoint de détergent"},
+  310:{c:"DOS",p:"NIN",d:"Dosage soude"},
+  315:{c:"CIR",p:"NIN",d:"Circulation soude"},
+  319:{c:"EAU",p:"NIN",d:"Eau vers bac de lancement"},
+  320:{c:"VID",p:"NIN",d:"Vidange bac de lancement (niveau bas)"},
+  325:{c:"VID",p:"NIN",d:"Évacuation solution nettoyage (soude) vers égout : vidange"},
+  327:{c:"FLIP",p:"NIN",d:"Rinçage avec abattement de quelques vannes (Flip)"},
+};
+
+// Maintenance data: to be filled progressively. Each entry: array of {tag, text}
+// tag examples: "VANNE", "POMPE", "CAPTEUR"
+const MAINT = {
+  0: [{tag:"VANNE", text:"Vanne V105"}, {tag:"VANNE", text:"Vanne V107"}, {tag:"VANNE", text:"Vanne V158"}],
+  3: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  4: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  5: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  10: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  15: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  20: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  25: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"VANNE", text:"Vanne V127"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  35: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  40: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  45: [{tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  49: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"VANNE", text:"Vanne V125"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}],
+  50: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  55: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  103: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  104: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  105: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}],
+  106: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}],
+  110: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}],
+  115: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  117: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  122: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  123: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  124: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  125: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  130: [{tag:"VANNE", text:"Vanne V120 - position intermédiaire"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  131: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  132: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  133: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  134: [{tag:"VANNE", text:"Vanne V104 (entrée BTD)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  135: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  136: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  140: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  142: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  143: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  147: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  148: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"DOSAGE", text:"Poste dosage lessive en circulation (M12 / V80)"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  149: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  150: [{tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  155: [{tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V119"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"VANNE", text:"Vanne V140 / V141"}, {tag:"VANNE", text:"Vanne V193"}, {tag:"VANNE", text:"Vanne V240"}],
+  160: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}],
+  163: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC64 / V151"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}],
+  203: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"DOSAGE", text:"Poste dosage lessive en circulation (M12 / V80)"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  204: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"DOSAGE", text:"Poste dosage lessive en circulation (M12 / V80)"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  205: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"DOSAGE", text:"Poste dosage lessive en circulation (M12 / V80)"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  207: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"DOSAGE", text:"Poste dosage lessive en circulation (M12 / V80)"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  210: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"DOSAGE", text:"Poste dosage lessive en circulation (M12 / V80)"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  240: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"VANNE", text:"Vanne de vidange détergent V81"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  245: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"VANNE", text:"Vanne de vidange détergent V81"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"VANNE", text:"Vanne dosage V85"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  250: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"VANNE", text:"Vanne de vidange détergent V81"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"VANNE", text:"Vanne dosage V85"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  252: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"VANNE", text:"Vanne V127"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"VANNE", text:"Vanne V103"}],
+  253: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  255: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  257: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  258: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  259: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}],
+  265: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"VANNE", text:"Vanne de vidange détergent V81"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  270: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"VANNE", text:"Vanne de vidange détergent V81"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"VANNE", text:"Vanne dosage V85"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  275: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"VANNE", text:"Vanne de vidange détergent V81"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"VANNE", text:"Vanne dosage V85"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  277: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"VANNE", text:"Vanne V127"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"VANNE", text:"Vanne V103"}],
+  278: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  280: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  282: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  295: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"VANNE", text:"Vanne V124"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"VANNE", text:"Vanne V127"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+  296: [{tag:"VANNE", text:"Vanne V112 (circuit stérilisation)"}, {tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}],
+  298: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}],
+  304: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  308: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V122B"}, {tag:"DOSAGE", text:"Poste dosage lessive en circulation (M12 / V80)"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}],
+  310: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"VANNE", text:"Vanne de vidange détergent V81"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  315: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"CAPTEUR", text:"Capteur température TIC43"}, {tag:"CAPTEUR", text:"Capteur température TIC44 / TIC40 / V141"}, {tag:"VANNE", text:"Vanne eau de dosage V84"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V103"}],
+  319: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V102"}, {tag:"VANNE", text:"Vanne V103"}],
+  320: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}],
+  325: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Pompe / moteur M2"}, {tag:"POMPE", text:"Moteur M6 (vanne V131)"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"POMPE", text:"Moteur M9"}, {tag:"POMPE", text:"Moteur M10"}],
+  327: [{tag:"VANNE", text:"Vanne V114 (ligne principale)"}, {tag:"VANNE", text:"Vanne V122A"}, {tag:"VANNE", text:"Vanne V120 - position active"}, {tag:"VANNE", text:"Vanne V126"}, {tag:"VANNE", text:"Vanne V127"}, {tag:"CAPTEUR", text:"Débitmètre FIC5"}, {tag:"CAPTEUR", text:"Capteur d'occupation objet K160"}, {tag:"POMPE", text:"Moteur M7"}, {tag:"VANNE", text:"Vanne V99"}, {tag:"VANNE", text:"Vanne V100"}, {tag:"VANNE", text:"Vanne V103"}],
+};
+
+// Étapes confirmées directement sur l'écran de l'automate (capture réelle)
+const VERIFIED_STEPS = new Set([155]);
+
+const CODE_LABELS = {
+  REP:"Repos", ATT:"Attente", REM:"Remplissage", VID:"Vidange/Évacuation", CHF:"Chauffage",
+  REF:"Refroidissement", STE:"Stérilisation", CIR:"Circulation", POU:"Pousse produit/eau",
+  DOS:"Dosage", RIN:"Rinçage", DEM:"Démarrage", CONF:"Confirmation", FLIP:"Flip vannes",
+  EAU:"Appoint eau", STAB:"Stabilisation"
+};
+
+const input = document.getElementById('stepInput');
+const emptyState = document.getElementById('emptyState');
+const resultCard = document.getElementById('resultCard');
+const maintPanel = document.getElementById('maintPanel');
+
+function buildKeypad(){
+  const keys = ["1","2","3","4","5","6","7","8","9","C","0","⌫"];
+  const kp = document.getElementById('keypad');
+  keys.forEach(k=>{
+    const b = document.createElement('button');
+    b.className = 'key' + (k==="C"||k==="⌫" ? ' wide':'');
+    b.textContent = k;
+    b.onclick = ()=>{
+      if(k==="C"){ input.value=""; }
+      else if(k==="⌫"){ input.value = input.value.slice(0,-1); }
+      else if(input.value.length<3){ input.value += k; }
+      lookup();
+    };
+    kp.appendChild(b);
+  });
+}
+buildKeypad();
+
+function clearInput(){ input.value=""; lookup(); input.focus(); }
+
+function lookup(){
+  const val = input.value.trim();
+  maintPanel.classList.remove('show');
+  if(!val || !DATA[val]){
+    resultCard.classList.remove('show');
+    emptyState.style.display = 'block';
+    return;
+  }
+  const row = DATA[val];
+  const phase = PHASES[row.p];
+  emptyState.style.display = 'none';
+  resultCard.classList.add('show');
+
+  document.getElementById('phaseStrip').style.background = phase.color;
+  document.getElementById('rEtape').textContent = val;
+  document.getElementById('rEtape').style.color = phase.color;
+  document.getElementById('rPhaseName').textContent = phase.name;
+  document.getElementById('rPhaseName').style.color = phase.color;
+  document.getElementById('rPhaseNote').textContent = phase.note;
+  document.getElementById('rDesc').textContent = row.d;
+
+  const chip = document.getElementById('rCode');
+  chip.textContent = row.c + " · " + (CODE_LABELS[row.c]||"");
+  chip.style.background = CODE_COLORS[row.c] || "#555";
+
+  const maintList = document.getElementById('maintList');
+  maintList.innerHTML = "";
+  const isVerified = VERIFIED_STEPS.has(Number(val));
+  const badge = document.getElementById('verifiedBadge');
+  if(isVerified){
+    badge.style.display = 'inline-block';
+    badge.textContent = '✓ Vérifié sur l\'automate';
+  } else {
+    badge.style.display = 'none';
+  }
+  document.getElementById('maintSource').textContent = isVerified
+    ? "Capturé sur l'écran de l'automate le 15/07/2026."
+    : "Estimé à partir du tableau technique — à confirmer sur site.";
+  const items = MAINT[val];
+  if(items && items.length){
+    items.forEach(it=>{
+      const div = document.createElement('div');
+      div.className = 'maint-item';
+      div.innerHTML = `<span class="tag">${it.tag}</span><span>${it.text}</span>`;
+      maintList.appendChild(div);
+    });
+  } else {
+    maintList.innerHTML = `<div class="maint-empty">Points de maintenance pas encore renseignés pour cette étape. À compléter prochainement.</div>`;
+  }
+}
+
+input.addEventListener('input', ()=>{ input.value = input.value.replace(/[^0-9]/g,''); lookup(); });
+
+function toggleMaint(){ maintPanel.classList.toggle('show'); }
+
+function toggleBrowse(){
+  const b = document.getElementById('browse');
+  b.classList.toggle('show');
+  document.getElementById('browseBtn').textContent = b.classList.contains('show') ? "Masquer la liste" : "Parcourir toutes les étapes par phase";
+  if(b.classList.contains('show') && b.innerHTML===""){
+    Object.keys(PHASES).forEach(pk=>{
+      const phase = PHASES[pk];
+      const group = document.createElement('div');
+      group.className = 'phase-group';
+      group.innerHTML = `<h3 style="color:${phase.color}">${phase.name}</h3>`;
+      Object.keys(DATA).filter(k=>DATA[k].p===pk).forEach(k=>{
+        const row = document.createElement('div');
+        row.className = 'mini-row';
+        row.innerHTML = `<span class="mn" style="color:${phase.color}">${k}</span><span class="mt">${DATA[k].d}</span>`;
+        row.onclick = ()=>{ input.value=k; lookup(); window.scrollTo({top:0, behavior:'smooth'}); };
+        group.appendChild(row);
+      });
+      b.appendChild(group);
+    });
+  }
+}
+
+function updateClock(){
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  document.getElementById('clockTime').textContent = `${hh}:${mm}`;
+  const days = ['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+  const months = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+  document.getElementById('clockDate').textContent =
+    `${days[now.getDay()]} ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+}
+updateClock();
+setInterval(updateClock, 1000 * 10);
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+input.focus();
+</script>
+</body>
+</html>
